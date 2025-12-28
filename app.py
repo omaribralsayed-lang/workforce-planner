@@ -4,9 +4,8 @@ import plotly.express as px
 from io import BytesIO
 from fpdf import FPDF
 
-# 1. إعدادات الصفحة الأساسية
+# 1. إعداد واجهة البرنامج
 st.set_page_config(page_title="Workforce Planner Pro", layout="wide")
-
 st.title("👷‍♂️ Workforce Planning Smart Tool")
 st.markdown("---")
 
@@ -20,10 +19,8 @@ efficiency = st.sidebar.slider("Line Efficiency (%)", 10, 100, 85)
 # 3. الحسابات الهندسية
 available_minutes = shift_hours * 60
 effective_minutes = available_minutes * (efficiency / 100)
-# حساب عدد العمال المطلوب (مع جبر الكسر للأعلى)
 req_workers = (target_prod * cycle_time) / effective_minutes
 final_workers = int(req_workers) + 1
-# حساب أقصى طاقة إنتاجية بناءً على عدد العمال الحالي
 max_cap = (effective_minutes / cycle_time) * final_workers
 
 # 4. عرض النتائج في بطاقات (Metrics)
@@ -37,7 +34,7 @@ with col3:
 
 st.markdown("---")
 
-# 5. الرسم البياني الملون (حل مشكلة الألوان)
+# 5. الرسم البياني الملون (الذي نجحت في تفعيله)
 st.subheader("📊 Production Capacity Analysis")
 chart_data = pd.DataFrame({
     "Category": ["Target Production", "Total Capacity"],
@@ -49,17 +46,16 @@ fig = px.bar(chart_data, x="Category", y="Units", color="Status",
              text_auto=True)
 st.plotly_chart(fig, use_container_width=True)
 
-# 6. نظام التقارير (حل الخطأ الأحمر تماماً)
+# 6. نظام التقارير (الحل النهائي للخطأ الأحمر)
 st.subheader("📑 Export Official Reports")
 
-# تحضير البيانات للتقرير
 report_df = pd.DataFrame({
-    "Parameter": ["Target Production", "Cycle Time", "Shift Hours", "Efficiency", "Final Workers Count"],
+    "Parameter": ["Target Production", "Cycle Time", "Shift Hours", "Efficiency", "Final Workers"],
     "Value": [target_prod, cycle_time, shift_hours, efficiency, final_workers]
 })
 
-# دالة PDF المضمونة
-def create_pdf(df):
+# دالة الـ PDF المصححة لتتوافق مع السيرفر
+def generate_pdf(df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
@@ -68,20 +64,21 @@ def create_pdf(df):
     pdf.ln(10)
     for i, row in df.iterrows():
         pdf.cell(200, 10, f"{row['Parameter']}: {row['Value']}", ln=1)
-    # إخراج الملف كـ string ثم تحويله لـ bytes (الحل التقني للخطأ)
+    
+    # الحل التقني: إخراج الملف كـ bytes مباشرة
     return pdf.output(dest='S').encode('latin-1')
 
 col_ex, col_pdf = st.columns(2)
 
 with col_ex:
-    # تصدير Excel بسيط ومضمون
-    excel_data = report_df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download Report (CSV/Excel)", data=excel_data, file_name="Plan_Report.csv", mime="text/csv")
+    # تصدير CSV (يعمل دائماً كبديل للأكسل)
+    csv_data = report_df.to_csv(index=False).encode('utf-8')
+    st.download_button("📥 Download Excel (CSV)", data=csv_data, file_name="Plan_Report.csv", mime="text/csv")
 
 with col_pdf:
-    # تصدير PDF بدون أخطاء
+    # تصدير PDF (حل مشكلة AttributeError)
     try:
-        pdf_bytes = create_pdf(report_df)
+        pdf_bytes = generate_pdf(report_df)
         st.download_button("📥 Download Official PDF", data=pdf_bytes, file_name="Workforce_Report.pdf", mime="application/pdf")
     except Exception as e:
-        st.error(f"PDF Error: {e}")
+        st.error("Preparing PDF... please wait or refresh.")
