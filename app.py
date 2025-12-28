@@ -32,23 +32,19 @@ with col2:
 
 st.markdown("---")
 
-# --- الجزء المحدث: رسم بياني ملون ---
+# الرسم البياني الملون
 st.subheader("📊 Production Capacity Analysis")
-
-# تجهيز البيانات للرسم البياني
 chart_data = pd.DataFrame({
     "Category": ["Target Production", "Max Capacity (Current Workers)"],
     "Units": [target_prod, int(max_cap * (int(required_workers) + 1))],
-    "Status": ["Target", "Capacity"] # لتحديد الألوان
+    "Status": ["Target", "Capacity"]
 })
-
-# رسم بياني ملون
 fig = px.bar(chart_data, x="Category", y="Units", color="Status",
              color_discrete_map={"Target": "#1f77b4", "Capacity": "#ff7f0e"},
              text_auto=True)
 st.plotly_chart(fig, use_container_width=True)
 
-# --- نظام التقارير (Excel & PDF) ---
+# نظام التقارير
 st.subheader("📑 Export Official Reports")
 
 # تصدير Excel
@@ -64,22 +60,21 @@ report_df = pd.DataFrame({
     "Value": [target_prod, cycle_time, shift_hours, efficiency, int(required_workers) + 1]
 })
 
-col_ex, col_pdf = st.columns(2)
-with col_ex:
-    st.download_button("📥 Download Excel Report", data=to_excel(report_df), file_name="Workforce_Plan.xlsx")
-
-# تصدير PDF
+# تصدير PDF (نسخة مصححة)
 def create_pdf(df):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", 'B', 16)
     pdf.cell(200, 10, "Workforce Planning Report", ln=True, align='C')
     pdf.set_font("Arial", size=12)
+    pdf.ln(10)
     for i, row in df.iterrows():
-        pdf.cell(200, 10, f"{row['Parameter']}: {row['Value']}", ln=True)
-    return pdf.output(dest='S').encode('latin-1')
+        pdf.cell(200, 10, f"{row['Parameter']}: {row['Value']}", ln=1)
+    # تعديل طريقة الإخراج لحل الخطأ الأحمر
+    return pdf.output(dest='S')
 
+col_ex, col_pdf = st.columns(2)
+with col_ex:
+    st.download_button("📥 Download Excel Report", data=to_excel(report_df), file_name="Workforce_Plan.xlsx")
 with col_pdf:
     st.download_button("📥 Download PDF Report", data=create_pdf(report_df), file_name="Workforce_Report.pdf")
-
-st.info("💡 Pro Tip: This tool is now ready for LinkedIn! You can share your link to showcase your digital transformation skills.")
