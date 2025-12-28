@@ -26,17 +26,16 @@ c1, c2 = st.columns(2)
 c1.metric("Required Workers", final_workers)
 c2.metric("Total Capacity", int(max_cap))
 
-# 5. الرسم البياني (الألوان)
+# 5. الرسم البياني (الألوان التي نجحت في تفعيلها)
 st.subheader("📊 Capacity Analysis")
 fig = px.bar(x=["Target", "Capacity"], y=[target_prod, int(max_cap)],
              color=["Target", "Capacity"], color_discrete_sequence=["#1f77b4", "#ff7f0e"])
 st.plotly_chart(fig, use_container_width=True)
 
-# 6. قسم التقارير (حل نهائي ومضمون للخطأ الأحمر)
+# 6. قسم التقارير (الحل الجذري والنهائي للخطأ الأحمر)
 st.subheader("📑 Export Reports")
 report_df = pd.DataFrame({"Metric": ["Target", "Workers"], "Value": [target_prod, final_workers]})
 
-# دالة PDF بسيطة جداً متوافقة مع fpdf و fpdf2
 def generate_pdf_report(df):
     pdf = FPDF()
     pdf.add_page()
@@ -45,18 +44,16 @@ def generate_pdf_report(df):
     for i, row in df.iterrows():
         pdf.cell(200, 10, txt=f"{row['Metric']}: {row['Value']}", ln=True)
     
-    # تحويل البيانات لـ bytes بطريقة تناسب زر التحميل
-    out_str = pdf.output(dest='S')
-    if isinstance(out_str, str): # للتعامل مع النسخ القديمة والجديدة
-        return out_str.encode('latin-1')
-    return out_str
+    # تحويل البيانات لـ bytes بطريقة تناسب السيرفر تماماً
+    pdf_out = pdf.output(dest='S')
+    if isinstance(pdf_out, str):
+        return pdf_out.encode('latin-1')
+    return bytes(pdf_out)
 
 col_ex, col_pdf = st.columns(2)
 with col_ex:
     st.download_button("📥 Excel (CSV)", data=report_df.to_csv().encode('utf-8'), file_name="plan.csv")
 with col_pdf:
-    try:
-        pdf_data = generate_pdf_report(report_df)
-        st.download_button("📥 Download PDF", data=pdf_data, file_name="report.pdf", mime="application/pdf")
-    except:
-        st.info("Generating PDF... please wait.")
+    # هذا الجزء هو ما سيجعل الزر يظهر فوراً
+    pdf_data = generate_pdf_report(report_df)
+    st.download_button("📥 Download PDF", data=pdf_data, file_name="report.pdf", mime="application/pdf")
